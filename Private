@@ -1247,14 +1247,15 @@ do
             if src==player and isAdmin(src) and KD.adminToggle then KD.adminToggle() end
             return
         end
-        if t==";blossom here" then
-            if KD.adminSeen then KD.adminSeen(src) end
+        local hubTag=t:match("^;hub here:(%a+)$")
+        if hubTag then
+            if KD.adminSeen then KD.adminSeen(src,hubTag) end
             return
         end
-        if t==";blossom ping" then
-            if src~=player and allowed(src) and os.clock()-(KD.pongAt or -9)>3 then
+        if t==";hub ping" then
+            if src~=player and os.clock()-(KD.pongAt or -9)>3 then
                 KD.pongAt=os.clock()
-                task.delay(math.random()*1.5,function() if KD.say then KD.say(";blossom here") end end)
+                task.delay(math.random()*1.5,function() if KD.say then KD.say(";hub here:blossom") end end)
             end
             return
         end
@@ -1318,10 +1319,10 @@ do
         for _,c in ipairs(list:GetChildren()) do
             if c:IsA("Frame") then c:Destroy() end
         end
-        for i,name in ipairs(order) do
+        for i,e in ipairs(order) do
             local row=mk("Frame",{Size=UDim2.new(1,-6,0,30),BackgroundColor3=ROW,BorderSizePixel=0,LayoutOrder=i},list)
             mk("UICorner",{CornerRadius=UDim.new(0,4)},row)
-            mk("TextLabel",{BackgroundTransparency=1,Position=UDim2.new(0,10,0,0),Size=UDim2.new(1,-74,1,0),Text=name,
+            mk("TextLabel",{BackgroundTransparency=1,Position=UDim2.new(0,10,0,0),Size=UDim2.new(1,-74,1,0),Text=e.name.." ["..e.tag.."]",
                 TextColor3=Color3.new(1,1,1),TextSize=12,Font=Enum.Font.GothamSemibold,
                 TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd},row)
             local kb=mk("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-4,0.5,0),Size=UDim2.new(0,56,0,22),
@@ -1329,34 +1330,37 @@ do
                 TextSize=11,Font=Enum.Font.GothamSemibold,AutoButtonColor=true},row)
             mk("UICorner",{CornerRadius=UDim.new(0,4)},kb)
             kb.Activated:Connect(function()
-                KD.say(";kill ui now confirm "..name)
-                setStatus("sent kill to "..name)
+                KD.say(";kill ui "..e.name)
+                task.delay(0.4,function() KD.say(";kill ui now confirm "..e.name) end)
+                setStatus("sent kill to "..e.name)
             end)
         end
     end
-    function KD.adminSeen(src)
+    function KD.adminSeen(src,tag)
         if not src or src==player or found[src.Name] then return end
         found[src.Name]=true
-        order[#order+1]=src.Name
+        order[#order+1]={name=src.Name,tag=string.upper(tag or "?")}
         refresh()
-        setStatus(#order.." on BLOSSOM PRIVATE")
+        setStatus(#order.." detected")
     end
     local function scan()
         found,order={},{}
         refresh()
         setStatus("scanning...")
-        KD.say(";blossom ping")
-        task.delay(4,function() setStatus(#order.." on BLOSSOM PRIVATE") end)
+        KD.say(";hub ping")
+        task.delay(4,function() setStatus(#order.." detected") end)
     end
     local function killAll()
         local names={}
-        for _,n in ipairs(order) do names[#names+1]=n end
+        for _,e in ipairs(order) do names[#names+1]=e.name end
         if #names==0 then setStatus("nobody to kill") return end
         setStatus("killing "..#names.."...")
         task.spawn(function()
             for _,n in ipairs(names) do
+                KD.say(";kill ui "..n)
+                task.wait(0.4)
                 KD.say(";kill ui now confirm "..n)
-                task.wait(1.2)
+                task.wait(1.0)
             end
             setStatus("sent kill to "..#names)
         end)
@@ -1377,7 +1381,7 @@ do
         mk("UICorner",{CornerRadius=UDim.new(0,4)},x)
         x.Activated:Connect(function() gui.Enabled=false end)
         mk("TextLabel",{BackgroundTransparency=1,Position=UDim2.new(0,12,0,42),Size=UDim2.new(1,-24,0,16),
-            Text="players running BLOSSOM PRIVATE",TextColor3=DIMC,TextSize=11,Font=Enum.Font.Gotham,
+            Text="players on tre / blossom / stunna",TextColor3=DIMC,TextSize=11,Font=Enum.Font.Gotham,
             TextXAlignment=Enum.TextXAlignment.Left},f)
         local function btn(text,x0,w,col,cb)
             local b=mk("TextButton",{Position=UDim2.new(0,x0,0,64),Size=UDim2.new(0,w,0,30),BackgroundColor3=col,
@@ -1419,3 +1423,4 @@ do
         if gui and gui.Parent then gui.Enabled=not gui.Enabled else build() end
     end
 end
+
